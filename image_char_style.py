@@ -1,16 +1,37 @@
 import imageio
+import argparse
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 
+def parse_args():
+    desc = 'Image to Char Style'
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('-x', '--width', type=int, default=225, help='Image width')
+    parser.add_argument('-y', '--height', type=int, default=225, help='Image height')
+    parser.add_argument('-f', '--fontfile', type=str, default='aarx.ttf', help='Font file')
+    parser.add_argument('-t', '--fontsize', type=int, default=10, help='Char size')
+    parser.add_argument('-r', '--read-path', type=str, default=None, dest='read_path', help='Source path of image')
+    parser.add_argument('-s', '--save-path', type=str, default='ret', dest='save_path', help='Save path of result')
+    parser.add_argument('-d', '--duration', type=float, default=0.1, help='Gif duration')
+    return check_args(parser.parse_args())
+
+
+def check_args(args):
+    assert args.read_path is not None, 'enter the image path'
+    return args
+
+
 class Image2CharStyle:
-    def __init__(self, width, height, fontfile, filepath, savepath):
+    def __init__(self, width=225, height=225, fontfile=None, fontsize=10, filepath=None, savepath=None, duration=0.1):
         self.charset = "$@B%8&WM#*oahkbdpqwmzcvunxrjft/\\|()1{}[]?-_+~<>i!;:,\"^`'. "
         self.width = width
         self.height = height
         self.filepath = filepath
-        self.savepath = savepath
+        self.savepath = savepath + '.' + filepath.split('.')[-1]
         self.fontfile = fontfile
+        self.fontsize = fontsize
+        self.duration = duration
         self.charset2 = self.charset256(self.charset)
 
     @staticmethod
@@ -91,11 +112,11 @@ class Image2CharStyle:
         """
         images = []
         try:
-            font = self.load_font(self.fontfile, 10)
+            font = self.load_font(self.fontfile, self.fontsize)
             for i, char in enumerate(char_set):
                 color = pix[i]
                 color = tuple(color)
-                images.append(self.plot_char(10, 0, char, font, color))
+                images.append(self.plot_char(self.fontsize, 0, char, font, color))
         except Exception:
             print('failed')
         big_image = np.vstack([np.hstack(images[i:i + self.width])
@@ -114,3 +135,12 @@ class Image2CharStyle:
                 img = self.char2image(chars[i], colors[i])
                 imgs.append(img)
             imageio.mimsave(self.savepath, imgs, duration=0.1)
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    if args is None:
+        exit()
+    img2chr = Image2CharStyle(args.width, args.height, args.fontfile, args.fontsize,
+                              args.read_path, args.save_path, args.duration)
+    img2chr.run()
